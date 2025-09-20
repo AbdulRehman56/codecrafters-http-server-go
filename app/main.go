@@ -60,7 +60,19 @@ func handleConnection(conn net.Conn, directory string) {
 				conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 			} else if strings.HasPrefix(path, "/echo/") {
 				echoText := strings.TrimPrefix(path, "/echo/")
-				response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(echoText), echoText)
+
+				acceptEncoding := extractHeader(requestStr, "Accept-Encoding")
+				var contentEncoding string
+				if strings.Contains(acceptEncoding, "gzip") {
+					contentEncoding = "gzip"
+				}
+
+				response := "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
+				if contentEncoding != "" {
+					response += fmt.Sprintf("Content-Encoding: %s\r\n", contentEncoding)
+				}
+				response += fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(echoText), echoText)
+
 				conn.Write([]byte(response))
 			} else if path == "/user-agent" {
 				userAgent := extractHeader(requestStr, "User-Agent")
