@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"flag"
 	"fmt"
 	"net"
@@ -62,18 +64,35 @@ func handleConnection(conn net.Conn, directory string) {
 				echoText := strings.TrimPrefix(path, "/echo/")
 
 				acceptEncoding := extractHeader(requestStr, "Accept-Encoding")
+				var body []byte
 				var contentEncoding string
+
 				if strings.Contains(acceptEncoding, "gzip") {
+					// compress with gzip
+					var b bytes.Buffer
+					gz := gzip.NewWriter(&b)
+					_, err := gz.Write([]byte(echoText))
+					gz.Close()
+					if err != nil {
+						conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n\r\n"))
+						return
+					}
+					body = b.Bytes()
 					contentEncoding = "gzip"
+				} else {
+					body = []byte(echoText)
 				}
 
-				response := "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
+				// build response
+				response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n")
 				if contentEncoding != "" {
 					response += fmt.Sprintf("Content-Encoding: %s\r\n", contentEncoding)
 				}
-				response += fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(echoText), echoText)
+				response += fmt.Sprintf("Content-Length: %d\r\n\r\n", len(body))
 
+				// send headers + body
 				conn.Write([]byte(response))
+				conn.Write(body)
 			} else if path == "/user-agent" {
 				userAgent := extractHeader(requestStr, "User-Agent")
 				if userAgent != "" {
