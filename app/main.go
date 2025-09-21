@@ -67,7 +67,11 @@ func handleConnection(conn net.Conn, directory string) {
 				fmt.Printf("Received request for path: %s\n", path)
 
 				if path == "/" {
-					conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+					if shouldClose {
+						conn.Write([]byte("HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n"))
+					} else {
+						conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+					}
 				} else if strings.HasPrefix(path, "/echo/") {
 					echoText := strings.TrimPrefix(path, "/echo/")
 
