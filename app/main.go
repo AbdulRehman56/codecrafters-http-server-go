@@ -38,7 +38,7 @@ func main() {
 }
 
 func handleConnection(conn net.Conn, directory string) {
-	defer conn.Close()
+	// defer conn.Close()
 
 	buf := make([]byte, 1024)
 	n, err := conn.Read(buf)
