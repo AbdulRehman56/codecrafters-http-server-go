@@ -58,6 +58,9 @@ func handleConnection(conn net.Conn, directory string) {
 		firstLine := strings.Split(requestStr, "\r\n")[0]
 		parts := strings.Split(firstLine, " ")
 
+		connectionHeader := strings.ToLower(extractHeader(requestStr, "Connection"))
+		shouldClose := (connectionHeader == "close")
+
 		if strings.HasPrefix(requestStr, "GET ") {
 			if len(parts) >= 2 {
 				path := parts[1]
@@ -135,6 +138,10 @@ func handleConnection(conn net.Conn, directory string) {
 				response := fmt.Sprintf("HTTP/1.1 201 Created\r\n\r\n")
 				conn.Write([]byte(response))
 			}
+		}
+
+		if shouldClose {
+			return
 		}
 	}
 }
